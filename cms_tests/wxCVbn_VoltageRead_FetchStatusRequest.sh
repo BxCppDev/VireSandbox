@@ -2,16 +2,13 @@
 
 . SET_RABBIT_HOST_PORT.sh
 
-./_install.d/bin/rpc_request  --host              $RABBIT_HOST                                      \
+./_install.d/bin/fetch_status --host              $RABBIT_HOST                                      \
                               --port              $RABBIT_CLI                                       \
                               --login             "wxCVbn"                                          \
                               --password          "wxCVbn"                                          \
                               --vhost             "/supernemo/demonstrator/cms/vire/monitoring"     \
-                              --exchange_name     "resource_request.service"                        \
                               --dirs              "/Demonstrator/CMS/Coil/PS_I0/Monitoring/Voltage" \
-                              --leaf              "__dp_read__"                                     \
-                              --arg0              "refresh=true"
-#                              --arg0              "refresh=1"
+                              --leaf              "__dp_read__"
 
 
 

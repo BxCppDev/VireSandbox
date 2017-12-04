@@ -78,7 +78,9 @@ add_executable(vire_domains                  vire_domains.cxx)
 add_executable(add_tmpuser_wxCVbn            add_tmpuser_wxCVbn.cxx)
 add_executable(del_tmpuser_wxCVbn            del_tmpuser_wxCVbn.cxx)
 add_executable(rpc_request                   rpc_request.cxx)
+add_executable(fetch_status                  fetch_status.cxx)
 add_executable(event_listener                event_listener.cxx)
+add_executable(status_event_producer         status_event_producer.cxx)
 add_executable(echo_exchange_server          echo_exchange_server.cxx)
 #add_executable(exchange_service_perms        exchange_service_perms.cxx)
 #add_executable(exchange_request_perms        exchange_request_perms.cxx)
@@ -110,7 +112,17 @@ target_link_libraries(rpc_request PUBLIC
   ${Vire_example_cms_ex01_Boost_LIBRARIES}
   )
 
+target_link_libraries(fetch_status PUBLIC
+  Vire::Vire
+  ${Vire_example_cms_ex01_Boost_LIBRARIES}
+  )
+
 target_link_libraries(event_listener PUBLIC
+  Vire::Vire
+  ${Vire_example_cms_ex01_Boost_LIBRARIES}
+  )
+
+target_link_libraries(status_event_producer PUBLIC
   Vire::Vire
   ${Vire_example_cms_ex01_Boost_LIBRARIES}
   )
@@ -170,7 +182,9 @@ install(FILES
   ${CMAKE_BINARY_DIR}/add_tmpuser_wxCVbn
   ${CMAKE_BINARY_DIR}/del_tmpuser_wxCVbn
   ${CMAKE_BINARY_DIR}/rpc_request
+  ${CMAKE_BINARY_DIR}/fetch_status
   ${CMAKE_BINARY_DIR}/event_listener
+  ${CMAKE_BINARY_DIR}/status_event_producer
   ${CMAKE_BINARY_DIR}/echo_exchange_server
 #  ${CMAKE_BINARY_DIR}/exchange_service_perms
 #  ${CMAKE_BINARY_DIR}/exchange_request_perms

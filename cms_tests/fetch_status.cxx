@@ -18,7 +18,7 @@
 #include <vire/message/message_body.h>
 #include <vire/message/body_layout.h>
 #include <vire/utility/path.h>
-#include <vire/cms/resource_exec.h>
+#include <vire/cms/resource_fetch_status.h>
 
 // RabbitMQ
 #include "rabbitmq/parameters.h"
@@ -35,19 +35,12 @@ struct app_params
    string   vhost;
    string   login;
    string   passwd;
-   string   direct_queue_name;
-   string   exchange_name;
-   bool     exchange = false;
 
    //  request
    string   mode;
    string   setup;
    string   leaf;
    string   dirs;
-   string   arg0;  //  "key=value"       //  todo more flexible nb of args
-   string   arg1;
-   string   arg2;
-   string   arg3;
    bool     async = false;
    string   async_address;
 
@@ -57,20 +50,6 @@ struct app_params
                               ostream                                     & out_);
 
 };
-
-struct key_val
-{
-   string key;
-   string val;
-};
-
-void key_val_parse (const string & arg_str, struct key_val & kv)
-{
-   //  string arg_str = "key=val"
-   auto eq_pos = arg_str.find ("=");
-   kv.key      = arg_str.substr (0, eq_pos);
-   kv.val      = arg_str.substr (eq_pos+1);
-}
 
 int main (int argc_, char* argv_[])
 {
@@ -95,7 +74,6 @@ int main (int argc_, char* argv_[])
       po::store(parsed, vm);
       po::notify(vm);
       int            nb_req_args = 0;
-      struct key_val kv;
 
       // Fetch the opts/args :
       if (vm.count("help")) {
@@ -119,18 +97,12 @@ int main (int argc_, char* argv_[])
          if (params.passwd.empty ()) {
             params.passwd = "vireserver";
          }
-         if (params.direct_queue_name.empty ()) {
-            params.exchange = true;
-         }
-         if (params.exchange_name.empty ()) {
-            params.exchange_name = "resource_request";
-         }
          if (params.async_address.empty ()) {
             params.async = false;
-            params.mode  = "sync_resource_exec_request";
+            params.mode  = "sync_fetch_status_request";
          } else {
             params.async = true;
-            params.mode = "async_resource_exec_request";
+            params.mode = "async_fetch_status_request";
          }
          if (params.setup.empty()) {
             params.setup = "SuperNEMO";
@@ -146,21 +118,6 @@ int main (int argc_, char* argv_[])
             //params.leaf = "__dp_write__";
             //params.leaf = "StartCycling";
          }
-         if (params.arg0.empty()) {
-            nb_req_args = 0;
-         } else if (params.arg1.empty()) {
-            nb_req_args = 1;
-         } else if (params.arg2.empty()) {
-            nb_req_args = 2;
-         } else if (params.arg3.empty()) {
-            nb_req_args = 3;
-         } else {
-            nb_req_args = 4;
-         }
-//         if (params.mode == "async_resource_exec_request") {
-//            // Async return queue:
-//            params.async_address = "snemo.vire.client_0.Die0baxu.q";
-//         }
 
          string resource_path = vire::utility::path::build      (params.setup, params.dirs, params.leaf);
          string routing_key   = vire::utility::path::to_address (resource_path);
@@ -172,11 +129,6 @@ int main (int argc_, char* argv_[])
          clog <<    "[info] port              " << params.port   << endl;
          clog <<    "[info] vhost             " << params.vhost  << endl;
          clog <<    "[info] login             " << params.login  << endl;
-         if (params.exchange) {
-            clog << "[info] req.exchange      " << params.exchange_name      << endl;
-         } else {
-            clog << "[info] req.direct_queue  " << params.direct_queue_name  << endl;
-         }
          clog <<    "[info] resource path     " << resource_path << endl;
          clog <<    "[info] routing key       " << routing_key << endl;
          if (params.async) {
@@ -184,74 +136,54 @@ int main (int argc_, char* argv_[])
          }
 
          // Message:
-         vire::message::message req_msg;
+         vire::message::message fs_msg;
 
          // Header:
-         vire::message::message_header     & req_msg_header     = req_msg.grab_header ();
-         vire::message::message_identifier   req_msg_id           ("vire.server", 42);
-         vire::utility::model_identifier     req_body_layout_id;
+         vire::message::message_header     & fs_msg_header     = fs_msg.grab_header ();
+         vire::message::message_identifier   fs_msg_id           ("vire.server", 42);
+         vire::utility::model_identifier     fs_body_layout_id;
 //         std::clog << "[info] Vire req message body layout name    : " << vire::message::body_layout::name () << std::endl;
 //         std::clog << "[info] Vire req message body layout version : " << vire::message::body_layout::current_version () << std::endl;
 ///////////
-         req_body_layout_id.set_name       (vire::message::body_layout::name());
-         req_body_layout_id.set_version    (1);
+         fs_body_layout_id.set_name       (vire::message::body_layout::name());
+         fs_body_layout_id.set_version    (1);
          //req_body_layout_id.set_version    (vire::message::body_layout::current_version());
 ///////////
          //
-         req_msg_header.set_body_layout_id (req_body_layout_id);
-         req_msg_header.set_message_id     (req_msg_id);
-         req_msg_header.set_timestamp      (vire::time::now ());
+         fs_msg_header.set_body_layout_id (fs_body_layout_id);
+         fs_msg_header.set_message_id     (fs_msg_id);
+         fs_msg_header.set_timestamp      (vire::time::now ());
 ////
-         req_msg_header.set_category       (vire::message::MESSAGE_REQUEST);
+         fs_msg_header.set_category       (vire::message::MESSAGE_REQUEST);
 ////
-         //req_msg_header.set_asynchronous   (!params.async_address.empty ());
-         req_msg_header.set_asynchronous   (params.async);
-         req_msg_header.set_async_address  (params.async_address);
-         req_msg_header.add_metadata       ("user_correlation_id", routing_key);
+         //fs_msg_header.set_asynchronous   (!params.async_address.empty ());
+         fs_msg_header.set_asynchronous   (params.async);
+         fs_msg_header.set_async_address  (params.async_address);
+         fs_msg_header.add_metadata       ("user_correlation_id", routing_key);
 
          // Payload:
-         vire::cms::resource_exec rer;
-         rer.set_path (resource_path);
-         if (nb_req_args > 0) {
-            clog << "[info] req_arg0          " << params.arg0 << endl;
-            key_val_parse (params.arg0, kv);
-            rer.add_input_argument (kv.key, kv.val);
-         }
-         if (nb_req_args > 1) {
-            clog << "[info] req_arg1          " << params.arg1 << endl;
-            key_val_parse (params.arg1, kv);
-            rer.add_input_argument (kv.key, kv.val);
-         }
-         if (nb_req_args > 2) {
-            key_val_parse (params.arg2, kv);
-            rer.add_input_argument (kv.key, kv.val);
-            clog << "[info] req_arg2          " << params.arg2 << endl;
-         }
-         if (nb_req_args > 3) {
-            clog << "[info] req_arg3          " << params.arg3 << endl;
-            key_val_parse (params.arg3, kv);
-            rer.add_input_argument (kv.key, kv.val);
-         }
+         vire::cms::resource_fetch_status fsr;
+         fsr.set_path (resource_path);
          std::clog << std::endl;
-         rer.tree_dump (std::clog, "Resource execution request: ");
+         fsr.tree_dump (std::clog, "Fetch status request: ");
          std::clog << std::endl;
 
          // Body:
-         vire::message::message_body & req_msg_body = req_msg.grab_body ();
-         req_msg_body.set_payload (rer);
+         vire::message::message_body & fs_msg_body = fs_msg.grab_body ();
+         fs_msg_body.set_payload (fsr);
 ///////////
-         vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
+         vire::utility::model_identifier payload_type_id1 = fs_msg_body.get_payload_type_id ();
          vire::utility::model_identifier payload_type_id2;
          payload_type_id2.set (payload_type_id1.get_name (), 1);
-         req_msg_body.set_payload_type_id (payload_type_id2);
+         fs_msg_body.set_payload_type_id (payload_type_id2);
 ///////////
 
-         req_msg.tree_dump(std::clog, "Req. Message: ");
+         fs_msg.tree_dump(std::clog, "Fetch status message: ");
          std::clog << std::endl;
 
          // Generate protobufized message:
          std::ostringstream req_protobuf;
-         protobuftools::store (req_protobuf, req_msg, 0);
+         protobuftools::store (req_protobuf, fs_msg, 0);
 
          // Rabbit connection
          rabbitmq::connection_parameters c_par;
@@ -269,23 +201,16 @@ int main (int argc_, char* argv_[])
          rabbitmq::basic_properties      prop_in;
          rabbitmq::queue_parameters      q_par;
          rabbitmq::exchange_parameters   x_par;
-         if (params.exchange) {
-            x_par.name      = params.exchange_name;
-            x_par.type      = "topic";
-//            chan.exchange_declare (x_par);
-         }
+         x_par.name      = "resource_request.service";
+         x_par.type      = "topic";
          q_par.name      = "";
          q_par.exclusive = true;
          chan.queue_declare          (q_par);
-clog << "rab queue " << q_par.name << endl;
+	 clog << "rab queue " << q_par.name << endl;
          chan.basic_consume          (q_par.name, "", true);
          prop_out.set_correlation_id ("corid_" + std::to_string (std::rand ()));
          prop_out.set_reply_to       (q_par.name);
-         if (params.exchange) {
-            chan.basic_publish (x_par.name, routing_key, req_protobuf.str (), prop_out);
-         } else {
-            chan.basic_publish ("", params.direct_queue_name, req_protobuf.str (), prop_out);
-         }
+         chan.basic_publish (x_par.name, routing_key, req_protobuf.str (), prop_out);
          while (1) {
             chan.consume_message (response, routing_key, prop_in, delivery);
             if (not prop_in.has_correlation_id ())                               continue;
@@ -368,22 +293,6 @@ void app_params::build_options(boost::program_options::options_description & opt
     " --passwd \"vire\""
    )
 
-   ("direct_queue_name",
-    po::value<std::string>(&params_.direct_queue_name)
-    ->value_name("name"),
-    "Set request directly passing on a queue \n"
-    "Example :\n"
-    " --direct_queue_name PrivateQueue"
-   )
-
-   ("exchange_name",
-    po::value<std::string>(&params_.exchange_name)
-    ->value_name("name"),
-    "Set request passing by exchange. \n"
-    "Example :\n"
-    " --exchange_name PublicExchangeName"
-   )
-
    ("async_address,a",
     po::value<std::string>(&params_.async_address)
     ->value_name ("async_address"),
@@ -407,32 +316,7 @@ void app_params::build_options(boost::program_options::options_description & opt
     "Example :\n"
     " --leaf \"__dp_read__\" "
    )
-
-   ("arg0",
-    po::value<std::string>(&params_.arg0)
-    ->value_name("arg0"),
-    "Append \"a_key=a_value\" as request argument #0. \n"
-    "Example :\n"
-    " --arg0 \"refresh=true\" "
-   )
-
-   ("arg1",
-    po::value<std::string>(&params_.arg1)
-    ->value_name("arg1"),
-    "Append \"a_key=a_value\" as request argument #1. \n"
-   )
-
-   ("arg2",
-    po::value<std::string>(&params_.arg2)
-    ->value_name("arg1"),
-    "Append \"a_key=a_value\" as request argument #2. \n"
-   )
-
-   ("arg3",
-    po::value<std::string>(&params_.arg3)
-    ->value_name("arg3"),
-    "Append \"a_key=a_value\" as request argument #3. \n"
-   )
+   
    ; // end of options' description
 
    return;
@@ -441,7 +325,7 @@ void app_params::build_options(boost::program_options::options_description & opt
 void app_params::print_usage(boost::program_options::options_description & opts_,
                              ostream                                     & out_)
 {
-   static const string APP_NAME = "rpc_request";
+   static const string APP_NAME = "fetch_status";
    out_ << "\n" << APP_NAME << " -- " << endl;
    out_ << endl;
    out_ << "Usage : " << endl;
