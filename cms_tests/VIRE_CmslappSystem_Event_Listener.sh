@@ -7,6 +7,7 @@
                                 --login         "vireserver"                                                      \
                                 --password      "vireserver"                                                      \
                                 --vhost         "/supernemo/demonstrator/cms/vire/subcontractors/system/cmslapp"  \
+                                --exchange_name "subcontractor.event"                                             \
                                 --topic_0       "#"
 
 

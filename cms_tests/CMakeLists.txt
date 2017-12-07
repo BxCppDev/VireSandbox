@@ -77,6 +77,8 @@ link_libraries (${BxRabbitMQ_LIBRARIES} ${BxRabbitMQ_MANAGER_LIBRARIES})
 add_executable(vire_domains                  vire_domains.cxx)
 add_executable(add_tmpuser_wxCVbn            add_tmpuser_wxCVbn.cxx)
 add_executable(del_tmpuser_wxCVbn            del_tmpuser_wxCVbn.cxx)
+add_executable(connection_request            connection_request.cxx)
+add_executable(disconnection_request         disconnection_request.cxx)
 add_executable(rpc_request                   rpc_request.cxx)
 add_executable(fetch_status                  fetch_status.cxx)
 add_executable(event_listener                event_listener.cxx)
@@ -104,6 +106,16 @@ target_link_libraries(add_tmpuser_wxCVbn PUBLIC
 
 target_link_libraries(del_tmpuser_wxCVbn PUBLIC
   Vire::Vire
+  ${Vire_example_cms_ex01_Boost_LIBRARIES}
+  )
+
+target_link_libraries(connection_request PUBLIC
+   Vire::Vire_CMSLAPP
+  ${Vire_example_cms_ex01_Boost_LIBRARIES}
+  )
+
+target_link_libraries(disconnection_request PUBLIC
+   Vire::Vire_CMSLAPP
   ${Vire_example_cms_ex01_Boost_LIBRARIES}
   )
 
@@ -181,6 +193,8 @@ install(FILES
   ${CMAKE_BINARY_DIR}/vire_domains
   ${CMAKE_BINARY_DIR}/add_tmpuser_wxCVbn
   ${CMAKE_BINARY_DIR}/del_tmpuser_wxCVbn
+  ${CMAKE_BINARY_DIR}/connection_request
+  ${CMAKE_BINARY_DIR}/disconnection_request
   ${CMAKE_BINARY_DIR}/rpc_request
   ${CMAKE_BINARY_DIR}/fetch_status
   ${CMAKE_BINARY_DIR}/event_listener
