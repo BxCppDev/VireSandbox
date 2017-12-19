@@ -133,14 +133,15 @@ int main (int argc_, char* argv_ [])
     protobuftools::store (req_protobuf, req_msg, 0);
 
     // Rabbit connection
+    const bool                      pub_confirm  = true;
     rabbitmq::connection_parameters c_par;
-    c_par.host   = host;
-    c_par.port   = port;
-    c_par.vhost  = vhost;
-    c_par.login  = login;
-    c_par.passwd = passwd;
-    rabbitmq::connection            con (c_par);
-    rabbitmq::channel &             chan = con.grab_channel ();
+                                    c_par.host   = host;
+                                    c_par.port   = port;
+                                    c_par.vhost  = vhost;
+                                    c_par.login  = login;
+                                    c_par.passwd = passwd;
+    rabbitmq::connection            con (c_par, pub_confirm);
+    rabbitmq::channel &             chan         = con.grab_channel ();
 
     string                          response;
     uint64_t                        delivery;
