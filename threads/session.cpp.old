@@ -1,0 +1,108 @@
+#include "session.h"
+
+#include <iostream>
+#include <thread>
+
+std::string session_t::state_str (session_t::state_t state) {
+   switch (state) {
+      case session_t::ERROR     : return "ERROR";
+      case session_t::READY     : return "READY";
+      case session_t::RUNNING   : return "RUNNING";
+      case session_t::STOPPED   : return "STOPPED";
+      case session_t::COMPLETED : return "COMPLETED";
+      default                   : return "WHAT?";
+   }
+}
+
+session_t::session_t  (use_case_t *                           u_case,
+                       std::chrono::system_clock::time_point  reservation_begin,
+                       std::chrono::system_clock::time_point  reservation_end) {
+   t_begin       = reservation_begin;
+   t_end         = reservation_end;
+   d_reservation = t_end - t_begin;
+   if (u_case->get_stage ()      != use_case_t::NEW
+       and
+       u_case->get_completion () != use_case_t::COMPLETED) {
+      std::cout << "ERROR : use case PB" << std::endl;
+      state = ERROR;
+   } else if (d_reservation.count () < u_case->get_duration_max ().count ()) {
+      std::cout << "ERROR : too short reservation = " << d_reservation.count () << "    max possible durations = " << u_case->get_duration_max ().count () << std::endl;
+      state = ERROR;
+   } else {
+      state          = READY;
+      stop_requested = false;
+      use_case       = u_case;
+   }
+}
+
+session_t::state_t session_t::get_state () {
+   return state;
+}
+
+void session_t::start () {
+
+   use_case_t::completion_t complet;
+
+   if (state == READY) {
+      //
+      //
+      std::thread thread_test;
+      thread_test = std::thread (&session_t::fn_test, this);
+      //thread_test.detach ();
+      //
+      //
+      state = RUNNING;
+      if (stop_requested) {
+         state = STOPPED;
+      } else {
+         complet = use_case->init_stage ();
+         std::cout << "init stage =" << use_case_t::completion_str (complet) << std::endl;
+         std::cout << std::endl;
+      }
+      if (stop_requested) {
+         state = STOPPED;
+      } else {
+         complet = use_case->work_iteration ();
+         while (not stop_requested and complet == use_case_t::TO_BE_CONTINUED) complet = use_case->work_iteration ();
+         if (stop_requested) {
+            state = STOPPED;
+         }
+         std::cout << "work stage =" << use_case_t::completion_str (complet) << std::endl;
+         std::cout << std::endl;
+      }
+      if (stop_requested) {
+         state = STOPPED;
+      } else {
+         complet = use_case->finish_stage ();
+         std::cout << "finish stage =" << use_case_t::completion_str (complet) << std::endl;
+         std::cout << std::endl;
+         state = COMPLETED;
+      }
+      //
+      //
+      // abort (thread_test);
+      //
+      //
+      //thread_test.~thread ();
+      //thread_test.join ();
+      std::cout << "firt visibility" << std::endl;
+   }
+   std::cout << "second visibility" << std::endl;
+}
+
+void session_t::stop () {
+   stop_requested = true;
+}
+
+void session_t::fn_test () {
+   std::set_terminate (&session_t::fn_test_terminate);
+   while (1) {
+      std::this_thread::sleep_for (std::chrono::seconds (2));
+      std::cout << "---   fn_test   ---" << std::endl;
+   }
+}
+
+void session_t::fn_test_terminate () {
+   std::cout << "!!!!  fn_test_terminate   !!!!" << std::endl;
+
+}

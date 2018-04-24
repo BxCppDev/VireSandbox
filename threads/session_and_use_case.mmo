@@ -1,0 +1,12 @@
+
+
+la session lance les étapes du use case, étape par étape.
+chaque étape retourne son état (erreur, ok, ...)
+l'étape working est lancée itération par itération
+la session peut interrompre le use case entre chaque étape ou itération de l'étape working
+la session kill l'étape courante du use case en cas de dépassement du temps
+
+en cas d'erreur d'une étape -> on arrête tout : le use case et les sous-sessions
+
+
+
