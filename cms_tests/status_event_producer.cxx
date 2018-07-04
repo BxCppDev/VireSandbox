@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <memory>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -166,7 +167,8 @@ int main (int argc_, char* argv_[])
 //         evt_msg_header.add_metadata       ("user_correlation_id", routing_key);
 
       // Payload:
-      vire::cms::resource_status_record rsr;
+      auto rsr_ptr = std::make_shared<vire::cms::resource_status_record>();
+      auto & rsr = *rsr_ptr;
       rsr.set_path      (resource_path);
       rsr.set_timestamp (vire::time::now ());
       rsr.unset_all     ();
@@ -180,7 +182,7 @@ int main (int argc_, char* argv_[])
 
       // Body:
       vire::message::message_body & evt_msg_body = evt_msg.grab_body ();
-      evt_msg_body.set_payload (rsr);
+      evt_msg_body.set_payload (rsr_ptr);
       vire::utility::model_identifier payload_type_id1 = evt_msg_body.get_payload_type_id ();
       vire::utility::model_identifier payload_type_id2;
       payload_type_id2.set (payload_type_id1.get_name (), 1);

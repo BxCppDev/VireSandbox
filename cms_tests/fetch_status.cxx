@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <memory>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -160,7 +161,9 @@ int main (int argc_, char* argv_[])
       fs_msg_header.add_metadata       ("user_correlation_id", routing_key);
 
       // Payload:
-      vire::cms::resource_fetch_status fsr;
+      auto fsr_ptr = std::make_shared<vire::cms::resource_fetch_status>();
+
+      auto & fsr = *fsr_ptr;
       fsr.set_path (resource_path);
       std::clog << std::endl;
       fsr.tree_dump (std::clog, "Fetch status request: ");
@@ -168,7 +171,7 @@ int main (int argc_, char* argv_[])
 
       // Body:
       vire::message::message_body & fs_msg_body = fs_msg.grab_body ();
-      fs_msg_body.set_payload (fsr);
+      fs_msg_body.set_payload (fsr_ptr);
 ///////////
       vire::utility::model_identifier payload_type_id1 = fs_msg_body.get_payload_type_id ();
       vire::utility::model_identifier payload_type_id2;

@@ -1,4 +1,5 @@
 
+#include <algorithm>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -61,7 +62,7 @@ int main (int argc_, char* argv_[])
          if (params.passwd.empty ()) {
             app_params::print_usage (optPublic, std::cout);
             error_code = 1;
-	 }
+         }
          host   = params.host;
          port   = params.port;
          login  = params.login;
@@ -88,13 +89,24 @@ int main (int argc_, char* argv_[])
    rabbit_mgr mgr (host, port, login, passwd);
 
    clog << "USERS" << endl;
+   rabbitmq::user::list users;
+   rabbitmq::error_response err;
+   mgr.list_users(users, err);
    user        = "vireserver";
-   if (ok)  ok = mgr.add_user (user, user, error);
+   // if (std::find_if(users.begin(), users.end(), [&] (const rabbitmq::user & u) { return u.name == user; }) == users.end()) {
+   //   if (ok)
+   //   ok = mgr.add_user (user, user, error);
+   // }
+   ok = mgr.add_user (user, user, error);
+  
    user        = "cmslapp";
-   if (ok)  ok = mgr.add_user (user, user, error);
-
+   // if (std::find(users.begin(), users.end(), [&] (const rabbitmq::user & u) { return u.name == user; }) == users.end()) {
+   //   if (ok)  ok = mgr.add_user (user, user, error);
+   // }
+   ok = mgr.add_user (user, user, error);
    ///////////////////////////////////////////////////////////////////////////////////////////
-
+   ok = true;
+   
    if (ok) clog << "GATE" << endl;
    vhost       = "/supernemo/demonstrator/cms/vire/clients/gate";
    exchange    = "gate.service";

@@ -30,7 +30,7 @@ find_package(Boost 1.60.0 REQUIRED log program_options)
 set(Vire_example_cms_ex01_Boost_LIBRARIES Boost::log Boost::program_options)
 
 # BxRabbitMQ
-find_package(BxRabbitMQ 0.1 REQUIRED CONFIG COMPONENTS manager) # HINTS )
+find_package(BxRabbitMQ 0.4.3 REQUIRED CONFIG COMPONENTS manager) # HINTS )
 message (STATUS "BxRabbitMQ_INCLUDE_DIRS ='${BxRabbitMQ_INCLUDE_DIRS}'")
 message (STATUS "BxRabbitMQ_LIBRARIES    ='${BxRabbitMQ_LIBRARIES}'")
 

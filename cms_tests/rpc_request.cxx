@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <memory>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -208,7 +209,8 @@ int main (int argc_, char* argv_[])
       req_msg_header.add_metadata       ("user_correlation_id", routing_key);
 
       // Payload:
-      vire::cms::resource_exec rer;
+      auto rer_ptr = std::make_shared<vire::cms::resource_exec>();
+      auto & rer = *rer_ptr;
       rer.set_path (resource_path);
       if (nb_req_args > 0) {
          clog << "[info] req_arg0          " << params.arg0 << endl;
@@ -236,7 +238,7 @@ int main (int argc_, char* argv_[])
 
       // Body:
       vire::message::message_body & req_msg_body = req_msg.grab_body ();
-      req_msg_body.set_payload (rer);
+      req_msg_body.set_payload (rer_ptr);
 ///////////
       vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
       vire::utility::model_identifier payload_type_id2;

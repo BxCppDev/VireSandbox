@@ -11,6 +11,7 @@
 #include "rabbitmq/parameters.h"
 #include "rabbitmq/connection.h"
 #include "rabbitmq/channel.h"
+#include "rabbitmq/exception.h"
 
 using namespace std;
 
@@ -183,7 +184,13 @@ int main (int argc_, char* argv_[])
          }
       }
 
-   } catch (std::logic_error error) {
+   } catch (std::logic_error & error) {
+
+      std::cerr << "[error] " << error.what() << std::endl;
+      error_code = EXIT_FAILURE;
+
+
+   } catch (rabbitmq::exception & error) {
 
       std::cerr << "[error] " << error.what() << std::endl;
       error_code = EXIT_FAILURE;

@@ -12,6 +12,7 @@ cd _build.d
 cmake -DCMAKE_INSTALL_PREFIX=../_install.d \
       -DBOOST_ROOT="$(brew --prefix Boost)" \
       -DVire_DIR="$(virequery --cmakedir)" \
+      -DBxRabbitMQ_DIR="$(bxrabbitmq-query --cmakedir)" \
       -DQt5Core_DIR="$(brew --prefix qt5-base)/lib/cmake/Qt5Core" \
       -DQt5Gui_DIR="$(brew --prefix qt5-base)/lib/cmake/Qt5Gui" \
       -DQt5Widgets_DIR="$(brew --prefix qt5-base)/lib/cmake/Qt5Widgets" \

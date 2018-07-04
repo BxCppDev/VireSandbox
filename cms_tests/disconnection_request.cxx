@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <memory>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -18,7 +19,7 @@
 #include <vire/message/message_body.h>
 #include <vire/message/body_layout.h>
 #include <vire/utility/path.h>
-#include <vire/cmslapp/disconnection_request.h>
+#include <vire/cms/disconnection_request.h>
 
 // RabbitMQ
 #include "rabbitmq/parameters.h"
@@ -109,7 +110,8 @@ int main (int argc_, char* argv_ [])
 
     // Payload:
     vire::utility::instance_identifier   snemo_id ("SuperNEMO_Demonstrator");
-    vire::cmslapp::disconnection_request discon_req;
+    auto discon_req_ptr = std::make_shared<vire::cms::disconnection_request>();
+    auto & discon_req = *discon_req_ptr;
     discon_req.set_setup_id (snemo_id);
     clog << endl;
     discon_req.tree_dump (clog, "Disconnection request: ");
@@ -117,7 +119,7 @@ int main (int argc_, char* argv_ [])
 
     // Body:
     vire::message::message_body & req_msg_body = req_msg.grab_body ();
-    req_msg_body.set_payload (discon_req);
+    req_msg_body.set_payload (discon_req_ptr);
    ///////////
     vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
     vire::utility::model_identifier payload_type_id2;

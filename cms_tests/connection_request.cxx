@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <memory>
 
 // Boost
 #include <boost/program_options.hpp>
@@ -18,7 +19,7 @@
 #include <vire/message/message_body.h>
 #include <vire/message/body_layout.h>
 #include <vire/utility/path.h>
-#include <vire/cmslapp/connection_request.h>
+#include <vire/cms/connection_request.h>
 
 // RabbitMQ
 #include "rabbitmq/parameters.h"
@@ -123,27 +124,32 @@ int main (int argc_, char* argv_ [])
 
     // Payload:
     vire::utility::instance_identifier  snemo_id ("SuperNEMO_Demonstrator");
-    vire::cmslapp::connection_request   con_req;
+    auto con_rq_ptr = std::make_shared<vire::cms::connection_request>();
+    auto & con_req = *con_rq_ptr;
     con_req.set_setup_id (snemo_id);
     for (vector <string>::iterator itr = resources.begin (); itr != resources.end (); ++itr) {
-    	con_req.add_requested_resource (snemo + ":" + *itr);
+        con_req.add_requested_resource (snemo + ":" + *itr);
     }
     clog << endl;
     con_req.tree_dump (clog, "Connection request: ");
     clog << endl;
+    con_rq_ptr->tree_dump (clog, "Connection request (ptr): ");
+    clog << endl;
 
     // Body:
     vire::message::message_body & req_msg_body = req_msg.grab_body ();
-    req_msg_body.set_payload (con_req);
-   ///////////
-    vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
-    vire::utility::model_identifier payload_type_id2;
-    payload_type_id2.set (payload_type_id1.get_name (), 1);
-    req_msg_body.set_payload_type_id (payload_type_id2);
-   ///////////
+    req_msg_body.set_payload (con_rq_ptr);
+   // ///////////
+   //  vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
+   //  vire::utility::model_identifier payload_type_id2;
+   //  payload_type_id2.set (payload_type_id1.get_name (), 1);
+   //  req_msg_body.set_payload_type_id (payload_type_id2);
+   // ///////////
 
     req_msg.tree_dump (std::clog, "Req. Message: ");
     clog << endl;
+
+    con_req.tree_dump (clog, "Connection request: ");
 
     // Generate protobufized message:
     ostringstream req_protobuf;
