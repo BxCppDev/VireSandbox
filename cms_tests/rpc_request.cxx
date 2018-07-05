@@ -77,7 +77,6 @@ int main (int argc_, char* argv_[])
 {
    vire::initialize();
    int error_code = EXIT_SUCCESS;
-
    bool process = true;
    app_params params;
    namespace po = boost::program_options;
@@ -241,9 +240,9 @@ int main (int argc_, char* argv_[])
       req_msg_body.set_payload (rer_ptr);
 ///////////
       vire::utility::model_identifier payload_type_id1 = req_msg_body.get_payload_type_id ();
-      vire::utility::model_identifier payload_type_id2;
-      payload_type_id2.set (payload_type_id1.get_name (), 1);
-      req_msg_body.set_payload_type_id (payload_type_id2);
+      // vire::utility::model_identifier payload_type_id2;
+      // payload_type_id2.set (payload_type_id1.get_name (), 1);
+      // req_msg_body.set_payload_type_id (payload_type_id2);
 ///////////
 
       req_msg.tree_dump(std::clog, "Req. Message: ");
@@ -288,9 +287,12 @@ int main (int argc_, char* argv_[])
          chan.basic_publish ("", params.direct_queue_name, req_protobuf.str (), prop_out);
       }
       while (1) {
-         chan.consume_message (response, routing_key, prop_in, delivery);
-         if (not prop_in.has_correlation_id ())                               continue;
-         if (prop_in.get_correlation_id () == prop_out.get_correlation_id ()) break;
+        std::string resp_routing_key;
+        chan.consume_message (response, resp_routing_key, prop_in, delivery);
+        clog << "  Got response routing key = '" << resp_routing_key << "'" << endl;
+        // if (not prop_in.has_correlation_id ())                               continue;
+        // if (prop_in.get_correlation_id () == prop_out.get_correlation_id ()) break;
+        break;
       }
       //  clog << " [x] Got " << response << endl;
       stringstream resp_protobuf;

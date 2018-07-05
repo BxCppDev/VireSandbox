@@ -6,6 +6,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <signal.h>
+#include <memory>
 
 //
 #include "rabbitmq/parameters.h"
@@ -15,8 +16,14 @@
 
 #include <vire/com/utils.h>
 #include <vire/com/protobuf_encoding_driver.h>
-#include <vire/message/message.h>
 #include <vire/utility/base_payload.h>
+#include <vire/cms/connection_request.h>
+#include <vire/cms/connection_success.h>
+#include <vire/cms/resource_status_record.h>
+#include <vire/message/message.h>
+#include <vire/message/message_header.h>
+#include <vire/message/message_body.h>
+#include <vire/message/body_layout.h>
 
 using namespace std;
 
@@ -170,7 +177,7 @@ int main (int argc_, char* argv_[])
          chan.basic_consume (q_par.name);
          clog << " [x] Awaiting RPC requests. Press return to exit." << endl;
 
-         
+         std::string response;
          pid_t  service_pid = fork ();
          if (service_pid == 0) {
             while (1) {
@@ -186,10 +193,55 @@ int main (int argc_, char* argv_[])
                protoencoder.decode(raw_request_msg, request_msg);
                request_msg.tree_dump(std::cerr, "Request message:");
 
-               
-               prop_out.set_correlation_id (prop_in.get_correlation_id ());
-               chan.basic_publish          ("", prop_in.get_reply_to (), request, prop_out);
-               chan.basic_ack              (delivery);
+               vire::utility::const_payload_ptr_type request_payload
+                 = request_msg.get_body().get_payload();
+
+               std::shared_ptr<const vire::cms::connection_request> connRequestPtr
+                 = std::dynamic_pointer_cast<const vire::cms::connection_request>(request_payload);
+               if (connRequestPtr) {
+                 const vire::cms::connection_request & connRequest = *connRequestPtr;
+                 connRequest.tree_dump(std::cerr, "Connection Request:");
+
+                 // Payload:
+                 auto connSuccessPtr = std::make_shared<vire::cms::connection_success>();
+                 auto & connSuccess = *connSuccessPtr;
+                 for (const auto & resPath : connRequest.get_requested_resources()) {
+                   vire::cms::resource_status_record record;
+                   record.set_path(resPath);
+                   record.set_timestamp(vire::time::now_utc());
+                   record.set_missing();
+                   connSuccess.add_resource_status_record(record);
+                 }
+                 connSuccess.tree_dump(std::cerr, "Built Connection Success:");
+
+                 // Message:
+                 vire::message::message resp_msg;
+
+                 // Header:
+                 vire::message::message_header     & resp_msg_header     = resp_msg.grab_header ();
+                 vire::message::message_identifier   resp_msg_id           ("cmslapp", 42);
+                 vire::utility::model_identifier     resp_body_layout_id;
+                 resp_body_layout_id.set_name       (vire::message::body_layout::name());
+                 resp_body_layout_id.set_version    (1);
+                 resp_msg_header.set_body_layout_id (resp_body_layout_id);
+                 resp_msg_header.set_message_id     (resp_msg_id);
+                 resp_msg_header.set_timestamp      (vire::time::now ());
+                 resp_msg_header.set_category       (vire::message::MESSAGE_RESPONSE);
+
+                 // Body:
+                 vire::message::message_body & resp_msg_body = resp_msg.grab_body ();
+                 resp_msg_body.set_payload (connSuccessPtr);
+                 
+                 vire::com::protobuf_encoding_driver protoencoder;
+                 vire::com::raw_message_type raw_response_msg;
+                 protoencoder.encode(resp_msg, raw_response_msg);
+
+                 response = std::string(raw_response_msg.buffer.begin(), raw_response_msg.buffer.end());
+                 
+                 prop_out.set_correlation_id (prop_in.get_correlation_id ());
+                 chan.basic_publish          ("", prop_in.get_reply_to (), response, prop_out);
+                 chan.basic_ack              (delivery);
+               }                   
                clog << " [.] received request to " << routing_key << endl;
             }
          } else {

@@ -5,7 +5,7 @@ sources=$PWD
 mkdir -p _build.d
 mkdir -p _install.d
 
-rm -f _build.d/*
+# rm -f _build.d/*
 rm -f _install.d/*
 
 cd _build.d

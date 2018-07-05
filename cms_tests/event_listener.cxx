@@ -140,9 +140,7 @@ int main (int argc_, char* argv_[])
          }
 
          std::string                     routing_key;
-         std::string                     event;
          rabbitmq::basic_properties      props;
-         uint64_t                        delivery;
          rabbitmq::exchange_parameters   x_par;
          rabbitmq::queue_parameters      q_par;
          rabbitmq::connection_parameters c_par;
@@ -156,7 +154,7 @@ int main (int argc_, char* argv_[])
          rabbitmq::connection con (c_par);
          rabbitmq::channel &  chan = con.grab_channel ();
          chan.queue_declare (q_par);
-         clog << "EVENT QUEUE = " << q_par.name << endl;
+         clog << "AMQ-GEN EVENT QUEUE = " << q_par.name << endl;
          if (params.exchange) {
             x_par.name   = params.exchange_name;
             x_par.type   = "topic";
@@ -175,23 +173,37 @@ int main (int argc_, char* argv_[])
          chan.basic_consume    (q_par.name, "", true);  // consumer_tag = "", no_ack = true
          clog << " [*] Waiting for events ... (ctrl-C to exit)" << endl;
          while (1) {
-            chan.consume_message (event, routing_key, props, delivery);
-//            clog << "receiving something ..." << endl;
-//            clog << "                       " << event << endl;
+            std::string                     event;
+            uint64_t                        delivery;
+            clog << "call consume_message ..." << endl;
             try {
-               stringstream event_protobuf;
-               event_protobuf << event;
-               vire::message::message event_msg;
-               protobuftools::load (event_protobuf, event_msg, 0);
-               event_msg.tree_dump (std::clog, "Event : ");
-//               clog << "EVENT RECEIVED : " << endl << event << endl;
+              chan.consume_message (event, routing_key, props, delivery);
+              clog << "receiving something ..." << endl;
+              clog << "                 event = '" << event << "'" << endl;
+              clog << "           routing_key = '" << routing_key << "'" << endl;
+ //            try {
+//                stringstream event_protobuf;
+//                event_protobuf << event;
+//                // vire::message::message event_msg;
+//                // protobuftools::load (event_protobuf, event_msg, 0);
+//                // event_msg.tree_dump (std::clog, "Event : ");
+//                break;
+// //               clog << "EVENT RECEIVED : " << endl << event << endl;
+              break;
+            } catch (std::exception & error) {
+              clog << "EVENT ERROR >>>>> " << endl << error.what() << endl << "<<<<<<" << endl;
             } catch (...) {
-               clog << "EVENT ERROR >>>>> " << endl << event << endl << "<<<<<<" << endl;
+              clog << "EVENT ERROR >>>>> " << endl << event << endl << "<<<<<<" << endl;
             }
          }
       }
 
-   } catch (std::logic_error error) {
+   } catch (std::logic_error & error) {
+
+      std::cerr << "[error] " << error.what() << std::endl;
+      error_code = EXIT_FAILURE;
+
+   } catch (std::exception & error) {
 
       std::cerr << "[error] " << error.what() << std::endl;
       error_code = EXIT_FAILURE;
