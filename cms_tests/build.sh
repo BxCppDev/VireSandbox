@@ -6,7 +6,7 @@ mkdir -p _build.d
 mkdir -p _install.d
 
 # rm -f _build.d/*
-rm -f _install.d/*
+test -d _install.d/ && rm -fr _install.d/
 
 cd _build.d
 cmake -DCMAKE_INSTALL_PREFIX=../_install.d \
